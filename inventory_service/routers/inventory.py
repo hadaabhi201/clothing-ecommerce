@@ -11,21 +11,21 @@ from inventory_service.db import get_db
 router = APIRouter()
 
 
-db = get_db()
-
 @router.get("/categories", response_model=CategoryList)
-def get_categories():
+async def get_categories():
     """
     Retrieve all categories in the inventory.
     """
+    db = get_db()
     categories =[Category(id=c["id"], name=c["name"]) for c in db.all()]
     return CategoryList(categories=categories)
 
 @router.get("/categories/{category_id}/items", response_model=ItemsInCategory)
-def get_items(category_id: int):
+async def get_items(category_id: int):
     """
     Retrieve all items in the category.
     """
+    db = get_db()
     CategoryQ = Query()
     cat = db.get(CategoryQ.id == category_id)
     if not cat:
@@ -36,10 +36,11 @@ def get_items(category_id: int):
     )
 
 @router.get("/categories/{category_id}/items/{item_id}", response_model=Item)
-def get_item_detail(category_id: int, item_id: str):
+async def get_item_detail(category_id: int, item_id: str):
     """
     Retrieve details of a specific item in a category.
     """
+    db = get_db()
     CategoryQ = Query()
     cat = db.get(CategoryQ.id == category_id)
     if not cat:

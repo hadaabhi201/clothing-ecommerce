@@ -1,11 +1,11 @@
 from typing import List
 import random
-from tinydb import TinyDB
 from faker import Faker
 from inventory_service.models import Item, CategoryWithItems
 from inventory_service.providers.fake_apparel_provider import ApparelProvider
 from inventory_service.db import get_db
 
+db = get_db()
 
 
 def build_category(cid: int, name: str, items_per_cat: int = 5) -> CategoryWithItems:
@@ -27,11 +27,10 @@ def build_category(cid: int, name: str, items_per_cat: int = 5) -> CategoryWithI
         )
     return CategoryWithItems(id=cid, name=name, items=items)
 
-def init_inventory(db_path: str = "inventory_service/db/inventory_db.json", seed: int = 42):
+def init_inventory(seed: int = 42):
     random.seed(seed)
     Faker.seed(seed)
 
-    db = get_db()
     db.drop_tables()
 
     categories = list(ApparelProvider.types_by_category.keys())
@@ -41,7 +40,7 @@ def init_inventory(db_path: str = "inventory_service/db/inventory_db.json", seed
         payload.append(cat_model.model_dump())  # Pydantic v2 dict
 
     db.insert_multiple(payload)
-    print(f"Inventory initialized at {db_path} with {len(payload)} categories and {len(payload)*5} items.")
+    print(f"Inventory initialized with {len(payload)} categories and {len(payload)*5} items.")
     return db
 
 if __name__ == "__main__":

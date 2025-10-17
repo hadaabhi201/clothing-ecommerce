@@ -37,3 +37,4 @@ htmlcov/
 .env
 structure.txt
 inventory_db.json
+test_inventory.json
