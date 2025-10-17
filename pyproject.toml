@@ -1,0 +1,19 @@
+[project]
+name = "clothing-ecommerce"
+version = "0.1.0"
+description = "Kafka driven clothing ecommerce bootstrap"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Abhishek Hada" }]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.coverage.run]
+branch = true
+source = ["cart_service", "order_service", "payment_service", "inventory_service", "shipping_service", "notification_service", "common"]

@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+
+# Virtual environment
+.env
+.venv
+venv/
+env/
+
+# IDE settings
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Byte-compiled
+*.egg-info/
+.eggs/
+
+# Docker
+*.pid
+*.db
+*.sock
+docker-data/
+
+# Coverage / testing
+htmlcov/
+.coverage
+.cache/
+
+# Local configs
+.env
+structure.txt
