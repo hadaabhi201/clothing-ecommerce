@@ -2,6 +2,8 @@
 
 PY=python
 
+.PHONY: inventory
+
 install:
 	$(PY) -m pip install -U pip
 	$(PY) -m pip install -r requirements.txt
@@ -32,3 +34,6 @@ logs:
 
 topics:
 	$(PY) scripts/create_topics.py
+
+inventory:
+	$(PY) -m inventory_service.run

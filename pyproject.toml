@@ -5,6 +5,15 @@ description = "Kafka driven clothing ecommerce bootstrap"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Abhishek Hada" }]
+dependencies = [
+  "kafka-python==2.0.2",
+  "tinydb==4.8.2",
+  "Faker==33.0.0",
+  "fastapi==0.115.4",
+  "uvicorn[standard]==0.30.6",
+  "python-dotenv==1.0.1",
+  "pydantic==2.9.2",
+]
 
 [tool.black]
 line-length = 100

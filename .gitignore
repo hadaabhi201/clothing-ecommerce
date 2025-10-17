@@ -36,3 +36,4 @@ htmlcov/
 # Local configs
 .env
 structure.txt
+inventory_db.json
