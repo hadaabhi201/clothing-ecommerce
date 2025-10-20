@@ -36,6 +36,7 @@ source = [
   ]
 
 [tool.coverage.report]
+disable_warnings = ["module-not-imported"]
 show_missing = true
 skip_covered = true
 fail_under = 80

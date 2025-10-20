@@ -31,8 +31,51 @@ async def test_get_categories(fake_db):
 
     assert response.status_code == 200
     data = response.json()
-    print(data)
     assert data["categories"] != []  # ensure data seeded
     assert data["categories"][0]["name"] == "Footwear"
 
-# TODO - Need to add test for other endpoints too
+@pytest.mark.asyncio
+async def test_get_items(fake_db):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        response = await ac.get("/categories/1/items")
+
+    assert response.status_code == 200
+    data = response.json()
+    # category id should be 1
+    assert data["category"]["id"] == 1
+
+    # items list should have exactly 2 entries
+    assert len(data["items"]) == 2
+
+@pytest.mark.asyncio
+async def test_get_items_exceoption(fake_db):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        response = await ac.get("/categories/15/items")
+
+    assert response.status_code == 404
+    data = response.json()
+    assert data == {"detail": "Category not found"}
+
+@pytest.mark.asyncio
+async def test_get_item_detail(fake_db):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        response = await ac.get("/categories/1/items/1-1")
+
+    assert response.status_code == 200
+    data = response.json()
+    print(data)
+    assert data["id"] == '1-1'
+    assert data["name"] == "Sneaker"
+
+@pytest.mark.asyncio
+async def test_get_item_detail_exceoption(fake_db):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        response = await ac.get("/categories/15/items/123")
+
+    assert response.status_code == 404
+    data = response.json()
+    assert data == {"detail": "Category not found"}
