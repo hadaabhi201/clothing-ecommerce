@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from tinydb import TinyDB, Query
+from tinydb import Query
 
 from inventory_service.models import (
-    Category, CategoryList, Item, ItemsInCategory, ItemDetail
+    Category, CategoryList, Item, ItemsInCategory
 )
 
 
@@ -51,3 +51,16 @@ async def get_item_detail(category_id: int, item_id: str):
         raise HTTPException(status_code=404, detail="Item not found")
 
     return Item(**item_data)
+
+@router.get("/items/{item_id}", response_model=Item)
+async def find_item_detail( item_id: str):
+    """
+    Find item by item id.
+    """
+    db = get_db()
+    for cat in db.all():
+        for item in cat.get("items",[]):
+            if item["id"] == item_id:
+                return Item(**item)
+    raise HTTPException(status_code=404, detail="Item not found")
+

@@ -66,7 +66,6 @@ async def test_get_item_detail(fake_db):
 
     assert response.status_code == 200
     data = response.json()
-    print(data)
     assert data["id"] == '1-1'
     assert data["name"] == "Sneaker"
 
@@ -79,3 +78,22 @@ async def test_get_item_detail_exceoption(fake_db):
     assert response.status_code == 404
     data = response.json()
     assert data == {"detail": "Category not found"}
+
+@pytest.mark.asyncio
+async def test_find_item_by_id_success(fake_db):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        r = await ac.get("/items/1-1")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["category"] == "Footwear"
+    assert data["id"] == '1-1'
+    assert data["name"] == "Sneaker"
+
+@pytest.mark.asyncio
+async def test_find_item_by_id_not_found(fake_db):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        r = await ac.get("/items/not-here")
+    assert r.status_code == 404
+    assert r.json()["detail"] == "Item not found"

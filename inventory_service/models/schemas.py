@@ -21,7 +21,4 @@ class CategoryList(BaseModel):
 class ItemsInCategory(BaseModel):
     category: Category
     items: List[Item]
-
-class ItemDetail(BaseModel):
-    category: str
-    item: Item
+    
