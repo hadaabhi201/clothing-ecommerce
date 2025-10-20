@@ -1,5 +1,7 @@
-from faker.providers import BaseProvider
 import random
+
+from faker.providers import BaseProvider
+
 
 class ApparelProvider(BaseProvider):
     types_by_category = {
@@ -7,7 +9,13 @@ class ApparelProvider(BaseProvider):
         "Bottoms": ["Chinos", "Jeans", "Trousers", "Joggers", "Shorts", "Cargo Pants"],
         "Dresses": ["Wrap Dress", "Maxi Dress", "Slip Dress", "Shirt Dress", "A-line Dress"],
         "Outerwear": ["Denim Jacket", "Bomber Jacket", "Puffer Jacket", "Wool Coat", "Trench"],
-        "Activewear": ["Training Tee", "Leggings", "Running Shorts", "Track Jacket", "Compression Top"],
+        "Activewear": [
+            "Training Tee",
+            "Leggings",
+            "Running Shorts",
+            "Track Jacket",
+            "Compression Top",
+        ],
         "Footwear": ["Sneakers", "Running Shoes", "Loafers", "Chelsea Boots", "Slides", "Sandals"],
         "Accessories": ["Leather Belt", "Scarf", "Cap", "Beanie", "Sunglasses"],
         "Swimwear": ["Swim Trunks", "One-piece", "Bikini Set", "Rash Guard"],

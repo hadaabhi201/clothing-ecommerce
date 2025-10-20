@@ -1,10 +1,10 @@
-
 import pytest
-from httpx import AsyncClient, ASGITransport
 from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
+
+from cart_service.models import CartItem
 from cart_service.routers.cart import router as cart_router
 from common.inventory_client.inventory_client import InventoryClient
-from cart_service.models import CartItem
 
 # Setup FastAPI app and register router
 app = FastAPI()
@@ -12,21 +12,13 @@ app.include_router(cart_router)
 
 # --- Shared Mocks ---
 
+
 class MockInventoryClient(InventoryClient):
     async def find_item(self, item_id: str):
         if item_id == "out_of_stock":
-            return {
-                "item_id": item_id,
-                "name": "Shirt",
-                "price": 10.0,
-                "stock": 1
-            }
-        return {
-            "item_id": item_id,
-            "name": "Mock Item",
-            "price": 5.0,
-            "stock": 10
-        }
+            return {"item_id": item_id, "name": "Shirt", "price": 10.0, "stock": 1}
+        return {"item_id": item_id, "name": "Mock Item", "price": 5.0, "stock": 10}
+
 
 class MockCart:
     def __init__(self):
@@ -40,12 +32,9 @@ class MockCart:
         item = await client.find_item(item_id)
         if quantity > item["stock"]:
             raise ValueError("Item does not have enough stock")
-        self.items.append(CartItem(
-            item_id=item_id,
-            name=item["name"],
-            quantity=quantity,
-            price=item["price"]
-        ))
+        self.items.append(
+            CartItem(item_id=item_id, name=item["name"], quantity=quantity, price=item["price"])
+        )
 
     def model_dump(self, mode="json"):
         return {
@@ -54,17 +43,21 @@ class MockCart:
                     "item_id": item.item_id,
                     "name": item.name,
                     "quantity": item.quantity,
-                    "price": item.price
-                } for item in self.items
+                    "price": item.price,
+                }
+                for item in self.items
             ]
         }
+
 
 @pytest.fixture(autouse=True)
 def mock_cart_and_client(monkeypatch):
     monkeypatch.setattr("cart_service.routers.cart.cart", MockCart())
     monkeypatch.setattr("cart_service.routers.cart.client", MockInventoryClient())
 
+
 # --- Tests ---
+
 
 @pytest.mark.asyncio
 async def test_add_item_with_mock_cart():
@@ -76,6 +69,7 @@ async def test_add_item_with_mock_cart():
         assert data["message"] == "Item added"
         assert data["cart"]["items"][0]["item_id"] == "abc123"
 
+
 @pytest.mark.asyncio
 async def test_add_item_insufficient_stock():
     transport = ASGITransport(app=app)
@@ -84,14 +78,17 @@ async def test_add_item_insufficient_stock():
         assert res.status_code == 400
         assert res.json()["detail"] == "Item does not have enough stock"
 
+
 @pytest.mark.asyncio
 async def test_view_cart_empty(monkeypatch):
     class MockCart:
         def __init__(self):
             self.items = []
+
         @property
         def total_cost(self):
             return 0.0
+
         def model_dump(self, mode="json"):
             return {"items": []}
 
@@ -103,27 +100,19 @@ async def test_view_cart_empty(monkeypatch):
         assert res.status_code == 200
         assert res.json() == {"items": [], "total_cost": 0.0}
 
+
 @pytest.mark.asyncio
 async def test_view_cart_after_adding(monkeypatch):
     class MockCart:
         def __init__(self):
-            self.items = [
-                CartItem(item_id="1", name="Shirt", quantity=2, price=10.0)
-            ]
+            self.items = [CartItem(item_id="1", name="Shirt", quantity=2, price=10.0)]
+
         @property
         def total_cost(self):
             return 20.0
+
         def model_dump(self, mode="json"):
-            return {
-                "items": [
-                    {
-                        "item_id": "1",
-                        "name": "Shirt",
-                        "quantity": 2,
-                        "price": 10.0
-                    }
-                ]
-            }
+            return {"items": [{"item_id": "1", "name": "Shirt", "quantity": 2, "price": 10.0}]}
 
     monkeypatch.setattr("cart_service.routers.cart.cart", MockCart())
 

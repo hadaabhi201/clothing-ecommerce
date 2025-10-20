@@ -1,9 +1,9 @@
 from .config import (
-    inventory_api_setting,
     InventoryAPIConfig,
+    inventory_api_setting,
 )
 
-_all__ =[
-    "inventory_api_setting", 
+__all__ = [
+    "inventory_api_setting",
     InventoryAPIConfig,
-    ]
+]

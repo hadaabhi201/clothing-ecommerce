@@ -1,12 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from tinydb import Query
 
-from inventory_service.models import (
-    Category, CategoryList, Item, ItemsInCategory
-)
-
-
 from inventory_service.db import get_db
+from inventory_service.models import Category, CategoryList, Item, ItemsInCategory
 
 router = APIRouter()
 
@@ -17,8 +13,9 @@ async def get_categories():
     Retrieve all categories in the inventory.
     """
     db = get_db()
-    categories =[Category(id=c["id"], name=c["name"]) for c in db.all()]
+    categories = [Category(id=c["id"], name=c["name"]) for c in db.all()]
     return CategoryList(categories=categories)
+
 
 @router.get("/categories/{category_id}/items", response_model=ItemsInCategory)
 async def get_items(category_id: int):
@@ -34,6 +31,7 @@ async def get_items(category_id: int):
         category=Category(id=cat["id"], name=cat["name"]),
         items=[Item(**i) for i in cat["items"]],
     )
+
 
 @router.get("/categories/{category_id}/items/{item_id}", response_model=Item)
 async def get_item_detail(category_id: int, item_id: str):
@@ -52,15 +50,15 @@ async def get_item_detail(category_id: int, item_id: str):
 
     return Item(**item_data)
 
+
 @router.get("/items/{item_id}", response_model=Item)
-async def find_item_detail( item_id: str):
+async def find_item_detail(item_id: str):
     """
     Find item by item id.
     """
     db = get_db()
     for cat in db.all():
-        for item in cat.get("items",[]):
+        for item in cat.get("items", []):
             if item["id"] == item_id:
                 return Item(**item)
     raise HTTPException(status_code=404, detail="Item not found")
-

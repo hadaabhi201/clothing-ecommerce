@@ -1,6 +1,8 @@
 from tinydb import TinyDB
+
 from inventory_service.core.db_init import init_inventory
 from inventory_service.models import CategoryWithItems
+
 
 def test_init_inventory(monkeypatch):
     tmp_db = TinyDB("test_inventory.json")
@@ -15,4 +17,3 @@ def test_init_inventory(monkeypatch):
     for cat in data:
         m = CategoryWithItems(**cat)
         assert len(m.items) == 5
-    

@@ -1,7 +1,10 @@
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any
+
 import httpx
+
 from common.config import inventory_api_setting
+
 
 class InventoryClient:
     """
@@ -11,17 +14,18 @@ class InventoryClient:
       - GET /categories/{category_id}/items -> {"category": {... or name}, "items":[...]}
       - GET /categories/{category_id}/items/{item_id} -> Item JSON
     """
+
     def __init__(self):
         self.base_url = inventory_api_setting.INVENTORY_BASE_URL
         self.timeout = inventory_api_setting.HTTP_TIMEOUT_SECONDS
         self.retries = inventory_api_setting.HTTP_RETRIES
         self._client = httpx.AsyncClient(base_url=self.base_url, timeout=self.timeout)
-    
+
     async def aclose(self) -> None:
         await self._client.aclose()
-    
+
     async def _get(self, url: str) -> httpx.Response:
-        last_exc: Optional[Exception] = None
+        last_exc: Exception | None = None
         for attempt in range(self.retries - 1):
             try:
                 r = await self._client.get(url)
@@ -29,10 +33,10 @@ class InventoryClient:
                 return r
             except Exception as e:
                 last_exc = e
-                await asyncio.sleep(0.1 * (2 ** attempt))
-        raise last_exc    
-    
-    async def find_item(self,  item_id: str) -> Dict[str, Any]:
+                await asyncio.sleep(0.1 * (2**attempt))
+        raise last_exc
+
+    async def find_item(self, item_id: str) -> dict[str, Any]:
         response = await self._get(f"/items/{item_id}")
         return response.json()
 

@@ -1,4 +1,5 @@
-import subprocess, os
+import subprocess
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,18 +16,27 @@ TOPICS = [
     "shipping.completed",
 ]
 
+
 def ensure(topic: str):
     cmd = [
-        "docker", "exec", "-i", "clothing-broker",
+        "docker",
+        "exec",
+        "-i",
+        "clothing-broker",
         "opt/kafka/bin/kafka-topics.sh",
         "--create",
         "--if-not-exists",
-        "--topic", topic,
-        "--bootstrap-server", "localhost:9092",
-        "--partitions", "1",
-        "--replication-factor", "1",
+        "--topic",
+        topic,
+        "--bootstrap-server",
+        "localhost:9092",
+        "--partitions",
+        "1",
+        "--replication-factor",
+        "1",
     ]
     subprocess.run(cmd, check=False)
+
 
 for t in TOPICS:
     ensure(t)
