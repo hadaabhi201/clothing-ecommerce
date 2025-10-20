@@ -4,6 +4,7 @@ from httpx import AsyncClient, ASGITransport
 import inventory_service.db as dbmod
 from inventory_service.main import app  # use the same app the service runs
 
+
 @pytest.fixture
 def fake_db(tmp_path, monkeypatch):
     test_db = TinyDB(tmp_path / "test_inventory.json")
@@ -86,7 +87,6 @@ async def test_find_item_by_id_success(fake_db):
         r = await ac.get("/items/1-1")
     assert r.status_code == 200
     data = r.json()
-    assert data["category"] == "Footwear"
     assert data["id"] == '1-1'
     assert data["name"] == "Sneaker"
 

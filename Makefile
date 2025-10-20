@@ -37,3 +37,6 @@ topics:
 
 inventory:
 	$(PY) -m inventory_service.run
+
+cart:
+	$(PY) -m cart_service.run

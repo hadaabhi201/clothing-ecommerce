@@ -36,7 +36,6 @@ source = [
   ]
 
 [tool.coverage.report]
-disable_warnings = ["module-not-imported"]
 show_missing = true
 skip_covered = true
 fail_under = 80
@@ -52,4 +51,8 @@ dev = [
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "--cov --cov-report=term-missing"
-testpaths = ["tests"]
+testpaths = [
+  "common/tests", 
+  "inventory_service/tests",
+  "cart_service/tests"
+  ]
