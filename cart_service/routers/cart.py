@@ -1,33 +1,33 @@
-from fastapi import APIRouter, HTTPException
+from cart_service.dependency import get_inventory_client, get_user_cart
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
+from typing import Any
 
 from cart_service.models import AddItemRequest, Cart
 from common.inventory_client import InventoryClient
 
 router = APIRouter()
 
-cart = Cart(items=[])
-client = InventoryClient()
-
-
-@router.get("/cart", response_model=Cart)
-async def view_cart():
+@router.get("/cart/{user_id}", response_model=Cart)
+async def view_cart(user_cart: Cart = Depends(get_user_cart)) -> Cart:
     """
     Retrieve current cart contents
     """
-    cart_data = cart.model_dump(mode="json")
-    cart_data["total_cost"] = cart.total_cost
-
-    return JSONResponse(content=cart_data)
+    return user_cart
 
 
-@router.post("/cart/add")
-async def add_to_cart(data: AddItemRequest):
+@router.post("/cart/{user_id}/add")
+async def add_to_cart(
+    user_id: str,
+    data: AddItemRequest,
+    inventory_client: InventoryClient = Depends(get_inventory_client),
+    user_cart: Cart = Depends(get_user_cart),
+    ) -> dict[str, Any]:
     """
-    Add items to the cart
+    Add items to the cart for a user.
     """
     try:
-        await cart.add_item(data.item_id, data.quantity, client)
-        return {"message": "Item added", "cart": cart}
+        await user_cart.add_item(data.item_id, data.quantity, inventory_client)
+        return {"message": "Item added", "cart": user_cart}
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve)) from ve

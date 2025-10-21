@@ -1,126 +1,119 @@
+
+from cart_service.dependency import get_inventory_client, get_user_cart
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from unittest.mock import AsyncMock, patch
 
-from cart_service.models import CartItem
+from cart_service.models import Cart, CartItem
 from cart_service.routers.cart import router as cart_router
-from common.inventory_client.inventory_client import InventoryClient
 
-# Setup FastAPI app and register router
 app = FastAPI()
 app.include_router(cart_router)
 
-# --- Shared Mocks ---
+@pytest.fixture
+def mock_user_cart_dependency():
+    """Provides an empty cart for testing."""
+    return Cart(items=[])
 
+@pytest.fixture
+def mock_inventory_client_dependency():
+    """Provides a mocked InventoryClient for testing."""
+    mock_client = AsyncMock()
+    mock_client.find_item.return_value = {"item_id": "1-1", "name": "Mock Item", "price": 9.99, "stock": 10}
+    mock_client.is_available.return_value = True
+    return mock_client
 
-class MockInventoryClient(InventoryClient):
-    async def find_item(self, item_id: str):
-        if item_id == "out_of_stock":
-            return {"item_id": item_id, "name": "Shirt", "price": 10.0, "stock": 1}
-        return {"item_id": item_id, "name": "Mock Item", "price": 5.0, "stock": 10}
-
-
-class MockCart:
-    def __init__(self):
-        self.items = []
-
-    @property
-    def total_cost(self):
-        return sum(i.quantity * i.price for i in self.items)
-
-    async def add_item(self, item_id, quantity, client):
-        item = await client.find_item(item_id)
-        if quantity > item["stock"]:
-            raise ValueError("Item does not have enough stock")
-        self.items.append(
-            CartItem(item_id=item_id, name=item["name"], quantity=quantity, price=item["price"])
-        )
-
-    def model_dump(self, mode="json"):
-        return {
-            "items": [
-                {
-                    "item_id": item.item_id,
-                    "name": item.name,
-                    "quantity": item.quantity,
-                    "price": item.price,
-                }
-                for item in self.items
-            ]
-        }
-
+@pytest.fixture
+def mock_add_item_method():
+    """
+    Fixture that patches the Cart.add_item method with an AsyncMock.
+    The patch is automatically undone after the test finishes.
+    """
+    with patch.object(Cart, 'add_item', new_callable=AsyncMock) as mock_method:
+        yield mock_method
 
 @pytest.fixture(autouse=True)
-def mock_cart_and_client(monkeypatch):
-    monkeypatch.setattr("cart_service.routers.cart.cart", MockCart())
-    monkeypatch.setattr("cart_service.routers.cart.client", MockInventoryClient())
-
-
-# --- Tests ---
-
-
-@pytest.mark.asyncio
-async def test_add_item_with_mock_cart():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        res = await ac.post("/cart/add", json={"item_id": "abc123", "quantity": 3})
-        assert res.status_code == 200
-        data = res.json()
-        assert data["message"] == "Item added"
-        assert data["cart"]["items"][0]["item_id"] == "abc123"
+def override_dependencies(mock_inventory_client_dependency):
+    """
+    Fixture to set up and tear down dependency overrides for testing.
+    We only need to override get_inventory_client here.
+    """
+    app.dependency_overrides[get_inventory_client] = lambda: mock_inventory_client_dependency
+    app.dependency_overrides[get_user_cart] = lambda: Cart(items=[])  # Default empty cart for tests
+    yield
+    app.dependency_overrides = {}
 
 
 @pytest.mark.asyncio
-async def test_add_item_insufficient_stock():
+async def test_add_to_cart_success(mock_add_item_method):
+    """Test adding an item to the cart successfully."""
+    user_id = "testuser"
+    payload = {"item_id": "1-1", "quantity": 2}    
+    
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        res = await ac.post("/cart/add", json={"item_id": "out_of_stock", "quantity": 5})
-        assert res.status_code == 400
-        assert res.json()["detail"] == "Item does not have enough stock"
+        response = await ac.post(f"/cart/{user_id}/add", json=payload)
+    
+    assert response.status_code == 200
+    response_data = response.json()
+    assert response_data["message"] == "Item added"
+    
+    # Assert that the item was actually added to the mocked cart
+    mock_add_item_method.assert_awaited_once()
+    
+@pytest.mark.asyncio
+async def test_add_to_cart_item_does_not_exist(mock_inventory_client_dependency):
+    """Test adding an item that does not exist."""
+    user_id = "testuser"
+    payload = {"item_id": "unknown-item", "quantity": 1}
+    
+    # Configure mock client to return None, simulating not found
+    mock_inventory_client_dependency.find_item.return_value = None
+    
+    # Patch Cart.add_item to raise a ValueError
+    with patch.object(Cart, 'add_item', new=AsyncMock(side_effect=ValueError("Item with id 'unknown-item' does not exist."))):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            response = await ac.post(f"/cart/{user_id}/add", json=payload)
+
+    assert response.status_code == 400
+    assert "Item with id 'unknown-item' does not exist." in response.json()["detail"]
 
 
 @pytest.mark.asyncio
-async def test_view_cart_empty(monkeypatch):
-    class MockCart:
-        def __init__(self):
-            self.items = []
-
-        @property
-        def total_cost(self):
-            return 0.0
-
-        def model_dump(self, mode="json"):
-            return {"items": []}
-
-    monkeypatch.setattr("cart_service.routers.cart.cart", MockCart())
-
+async def test_view_cart_empty(mock_user_cart_dependency):
+    """Test viewing an empty cart."""
+    user_id = "testuser"
+    
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        res = await ac.get("/cart")
-        assert res.status_code == 200
-        assert res.json() == {"items": [], "total_cost": 0.0}
+        response = await ac.get(f"/cart/{user_id}")
+    
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+    assert response.json()["total_cost"] == 0.0
 
 
 @pytest.mark.asyncio
-async def test_view_cart_after_adding(monkeypatch):
-    class MockCart:
-        def __init__(self):
-            self.items = [CartItem(item_id="1", name="Shirt", quantity=2, price=10.0)]
-
-        @property
-        def total_cost(self):
-            return 20.0
-
-        def model_dump(self, mode="json"):
-            return {"items": [{"item_id": "1", "name": "Shirt", "quantity": 2, "price": 10.0}]}
-
-    monkeypatch.setattr("cart_service.routers.cart.cart", MockCart())
-
+async def test_view_cart_with_items(mock_user_cart_dependency):
+    """Test viewing a cart with items."""
+    user_id = "testuser"
+    initial_cart = Cart(items=[CartItem(item_id="1-1", name="Mock Item", quantity=2, price=9.99)])
+    
+    # Override get_user_cart to provide a cart with items
+    app.dependency_overrides[get_user_cart] = lambda user_id: initial_cart
+    
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        res = await ac.get("/cart")
-        assert res.status_code == 200
-        data = res.json()
-        assert data["total_cost"] == 20.0
-        assert len(data["items"]) == 1
-        assert data["items"][0]["item_id"] == "1"
+        response = await ac.get(f"/cart/{user_id}")
+    
+    assert response.status_code == 200
+    response_data = response.json()
+    print(response_data)
+    assert len(response_data["items"]) == 1
+    assert response_data["items"][0]["item_id"] == "1-1"
+    assert response_data["total_cost"] == 19.98
+
+    # Clean up the override
+    del app.dependency_overrides[get_user_cart]

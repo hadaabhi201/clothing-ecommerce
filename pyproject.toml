@@ -56,3 +56,7 @@ testpaths = [
   "inventory_service/tests",
   "cart_service/tests"
   ]
+asyncio_mode = "auto"
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
