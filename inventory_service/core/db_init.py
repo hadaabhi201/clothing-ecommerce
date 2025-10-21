@@ -1,6 +1,7 @@
 import random
 
 from faker import Faker
+from tinydb import TinyDB
 
 from inventory_service.db import get_db
 from inventory_service.models import CategoryWithItems, Item
@@ -29,7 +30,7 @@ def build_category(cid: int, name: str, items_per_cat: int = 5) -> CategoryWithI
     return CategoryWithItems(id=cid, name=name, items=items)
 
 
-def init_inventory(seed: int = 42):
+def init_inventory(seed: int = 42) -> TinyDB:
     random.seed(seed)
     Faker.seed(seed)
 

@@ -5,5 +5,5 @@ from .config import (
 
 __all__ = [
     "inventory_api_setting",
-    InventoryAPIConfig,
+    "InventoryAPIConfig",
 ]

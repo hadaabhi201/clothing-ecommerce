@@ -8,7 +8,7 @@ from common.inventory_client import InventoryClient
 
 
 @pytest.fixture(autouse=True)
-def mock_inventory_api_settings(monkeypatch):
+def mock_inventory_api_settings(monkeypatch: pytest.MonkeyPatch) -> InventoryAPIConfig:
     mock_settings = InventoryAPIConfig(
         INVENTORY_BASE_URL="http://mock-inventory-api", HTTP_TIMEOUT_SECONDS=1.0, HTTP_RETRIES=2
     )
@@ -17,7 +17,7 @@ def mock_inventory_api_settings(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_find_item_success():
+async def test_find_item_success() -> None:
     mock_response = Response(
         200,
         json={"id": "item123", "stock": 10},
@@ -37,43 +37,7 @@ async def test_find_item_success():
 
 
 @pytest.mark.asyncio
-async def test_is_available_true():
-    mock_response = Response(
-        200,
-        json={"id": "1-12", "stock": 10},
-        request=Request("GET", "http://mock-inventory-api/items/1-12"),
-    )
-
-    with patch(
-        "common.inventory_client.inventory_client.httpx.AsyncClient.get", new_callable=AsyncMock
-    ) as mock_get:
-        mock_get.return_value = mock_response
-
-        client = InventoryClient()
-
-        assert await client.is_available("item123", 5) is True
-
-
-@pytest.mark.asyncio
-async def test_is_available_false():
-    mock_response = Response(
-        200,
-        json={"id": "1-12", "stock": 10},
-        request=Request("GET", "http://mock-inventory-api/items/1-12"),
-    )
-
-    with patch(
-        "common.inventory_client.inventory_client.httpx.AsyncClient.get", new_callable=AsyncMock
-    ) as mock_get:
-        mock_get.return_value = mock_response
-
-        client = InventoryClient()
-
-        assert await client.is_available("item123", 50) is False
-
-
-@pytest.mark.asyncio
-async def test_get_retries_on_failure():
+async def test_get_retries_on_failure() -> None:
     client = InventoryClient()
 
     # First call raises an exception, second succeeds
@@ -93,7 +57,7 @@ async def test_get_retries_on_failure():
 
 
 @pytest.mark.asyncio
-async def test_get_raises_final_exception(mock_inventory_api_settings):
+async def test_get_raises_final_exception(mock_inventory_api_settings: AsyncMock) -> None:
     client = InventoryClient()
 
     with patch.object(client._client, "get", new_callable=AsyncMock) as mock_get:
@@ -106,7 +70,7 @@ async def test_get_raises_final_exception(mock_inventory_api_settings):
 
 
 @pytest.mark.asyncio
-async def test_get_timeout_retries_and_fails(mock_inventory_api_settings):
+async def test_get_timeout_retries_and_fails(mock_inventory_api_settings: AsyncMock) -> None:
     client = InventoryClient()
 
     with patch.object(client._client, "get", new_callable=AsyncMock) as mock_get:

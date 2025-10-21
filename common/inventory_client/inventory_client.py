@@ -36,15 +36,11 @@ class InventoryClient:
                 await asyncio.sleep(0.1 * (2**attempt))
         raise last_exc if last_exc is not None else RuntimeError("Unknown error during GET request")
 
-    async def find_item(self, item_id: str) -> dict[str, Any]:
+    async def find_item(self, item_id: str) -> dict[str, Any] | None:
         try:
             response = await self._get(f"/items/{item_id}")
             return cast(dict[str, Any], response.json())
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
-                return None # Return None if the item is not found
-            raise #
-
-    async def is_available(self, item_id: str, quantity: int) -> bool:
-        item = await self.find_item(item_id)
-        return int(item.get("stock", 0)) >= quantity
+                return None  # Return None if the item is not found
+            raise  #

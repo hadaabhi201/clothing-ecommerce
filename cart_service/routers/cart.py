@@ -1,12 +1,13 @@
-from cart_service.dependency import get_inventory_client, get_user_cart
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import JSONResponse
 from typing import Any
 
+from fastapi import APIRouter, Depends, HTTPException
+
+from cart_service.dependency import get_inventory_client, get_user_cart
 from cart_service.models import AddItemRequest, Cart
 from common.inventory_client import InventoryClient
 
 router = APIRouter()
+
 
 @router.get("/cart/{user_id}", response_model=Cart)
 async def view_cart(user_cart: Cart = Depends(get_user_cart)) -> Cart:
@@ -22,7 +23,7 @@ async def add_to_cart(
     data: AddItemRequest,
     inventory_client: InventoryClient = Depends(get_inventory_client),
     user_cart: Cart = Depends(get_user_cart),
-    ) -> dict[str, Any]:
+) -> dict[str, Any]:
     """
     Add items to the cart for a user.
     """

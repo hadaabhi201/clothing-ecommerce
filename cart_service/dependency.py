@@ -1,12 +1,14 @@
-from typing import Dict
+from collections.abc import AsyncGenerator
+
 from cart_service.models import Cart
 from common.inventory_client import InventoryClient
 
 # Simulating a user-based cart store for demonstration.
 # In a real application, this would be a database or cache.
-_cart_store: Dict[str, Cart] = {}
+_cart_store: dict[str, Cart] = {}
 
-async def get_inventory_client() -> InventoryClient:
+
+async def get_inventory_client() -> AsyncGenerator:
     """
     Provides a singleton instance of the InventoryClient.
     """

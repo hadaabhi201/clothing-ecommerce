@@ -17,7 +17,7 @@ TOPICS = [
 ]
 
 
-def ensure(topic: str):
+def ensure(topic: str) -> None:
     cmd = [
         "docker",
         "exec",

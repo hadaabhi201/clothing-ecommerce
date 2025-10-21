@@ -1,12 +1,15 @@
+from pathlib import Path
+
 import pytest
 from httpx import ASGITransport, AsyncClient
+from pytest import MonkeyPatch
 from tinydb import TinyDB
 
 from inventory_service.main import app  # use the same app the service runs
 
 
 @pytest.fixture
-def fake_db(tmp_path, monkeypatch):
+def fake_db(tmp_path: Path, monkeypatch: MonkeyPatch) -> TinyDB:
     test_db = TinyDB(tmp_path / "test_inventory.json")
 
     test_db.insert(
@@ -32,41 +35,37 @@ def fake_db(tmp_path, monkeypatch):
         }
     )
 
-    # patch get_db so every call uses this test_db
     monkeypatch.setattr("inventory_service.routers.inventory.get_db", lambda: test_db)
 
     return test_db
 
 
 @pytest.mark.asyncio
-async def test_get_categories(fake_db):
+async def test_get_categories(fake_db: TinyDB) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         response = await ac.get("/categories")
 
     assert response.status_code == 200
     data = response.json()
-    assert data["categories"] != []  # ensure data seeded
+    assert data["categories"] != []
     assert data["categories"][0]["name"] == "Footwear"
 
 
 @pytest.mark.asyncio
-async def test_get_items(fake_db):
+async def test_get_items(fake_db: TinyDB) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         response = await ac.get("/categories/1/items")
 
     assert response.status_code == 200
     data = response.json()
-    # category id should be 1
     assert data["category"]["id"] == 1
-
-    # items list should have exactly 2 entries
     assert len(data["items"]) == 2
 
 
 @pytest.mark.asyncio
-async def test_get_items_exceoption(fake_db):
+async def test_get_items_exceoption(fake_db: TinyDB) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         response = await ac.get("/categories/15/items")
@@ -77,7 +76,7 @@ async def test_get_items_exceoption(fake_db):
 
 
 @pytest.mark.asyncio
-async def test_get_item_detail(fake_db):
+async def test_get_item_detail(fake_db: TinyDB) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         response = await ac.get("/categories/1/items/1-1")
@@ -89,7 +88,7 @@ async def test_get_item_detail(fake_db):
 
 
 @pytest.mark.asyncio
-async def test_get_item_detail_exceoption(fake_db):
+async def test_get_item_detail_exceoption(fake_db: TinyDB) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         response = await ac.get("/categories/15/items/123")
@@ -100,7 +99,7 @@ async def test_get_item_detail_exceoption(fake_db):
 
 
 @pytest.mark.asyncio
-async def test_find_item_by_id_success(fake_db):
+async def test_find_item_by_id_success(fake_db: TinyDB) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         r = await ac.get("/items/1-1")
@@ -111,7 +110,7 @@ async def test_find_item_by_id_success(fake_db):
 
 
 @pytest.mark.asyncio
-async def test_find_item_by_id_not_found(fake_db):
+async def test_find_item_by_id_not_found(fake_db: TinyDB) -> None:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         r = await ac.get("/items/not-here")

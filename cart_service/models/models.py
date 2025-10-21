@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, Field, computed_field
 
 from common.inventory_client import InventoryClient
@@ -19,7 +18,7 @@ class CartItem(BaseModel):
 class Cart(BaseModel):
     items: list[CartItem] = []
 
-    @computed_field(return_type=float)
+    @computed_field  # type: ignore[misc]
     @property
     def total_cost(self) -> float:
         """Calculate the total cost of all items in the cart."""
@@ -28,7 +27,7 @@ class Cart(BaseModel):
     async def add_item(self, item_id: str, quantity: int, client: InventoryClient) -> None:
         item_data = await client.find_item(item_id)
         if item_data is None:
-           raise ValueError(f"Item with id '{item_id}' does not exist.")
+            raise ValueError(f"Item with id '{item_id}' does not exist.")
         if int(item_data.get("stock", 0)) < quantity:
             raise ValueError(f"Item '{item_id}' does not have enough stock.")
 

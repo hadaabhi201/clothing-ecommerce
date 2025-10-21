@@ -1,3 +1,4 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,7 +8,7 @@ from inventory_service.routers import inventory
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     init_inventory()  # seed db on startup
     yield
     # Shutdown logic (optional)

@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.get("/categories", response_model=CategoryList)
-async def get_categories():
+async def get_categories() -> CategoryList:
     """
     Retrieve all categories in the inventory.
     """
@@ -18,7 +18,7 @@ async def get_categories():
 
 
 @router.get("/categories/{category_id}/items", response_model=ItemsInCategory)
-async def get_items(category_id: int):
+async def get_items(category_id: int) -> ItemsInCategory:
     """
     Retrieve all items in the category.
     """
@@ -34,7 +34,7 @@ async def get_items(category_id: int):
 
 
 @router.get("/categories/{category_id}/items/{item_id}", response_model=Item)
-async def get_item_detail(category_id: int, item_id: str):
+async def get_item_detail(category_id: int, item_id: str) -> Item:
     """
     Retrieve details of a specific item in a category.
     """
@@ -52,7 +52,7 @@ async def get_item_detail(category_id: int, item_id: str):
 
 
 @router.get("/items/{item_id}", response_model=Item)
-async def find_item_detail(item_id: str):
+async def find_item_detail(item_id: str) -> Item:
     """
     Find item by item id.
     """
