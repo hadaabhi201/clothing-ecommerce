@@ -15,6 +15,10 @@ class CartItem(BaseModel):
     price: float
 
 
+class UpdateItemRequest(BaseModel):
+    quantity: int = Field(..., ge=0, description="Quantity must be a non-negative integer")
+
+
 class Cart(BaseModel):
     items: list[CartItem] = []
 
@@ -45,3 +49,28 @@ class Cart(BaseModel):
                     price=item_data.get("price", 0.0),
                 )
             )
+
+    async def remove_item(self, item_id: str) -> None:
+        """
+        Removes an item from the cart.
+        Raises ValueError if the item is not found.
+        """
+        item_to_remove = next((item for item in self.items if item.item_id == item_id), None)
+        if item_to_remove:
+            self.items.remove(item_to_remove)
+        else:
+            raise ValueError(f"Item with id '{item_id}' not found in cart.")
+
+    async def update_item_quantity(self, item_id: str, new_quantity: int) -> None:
+        """
+        Updates the quantity of an item in the cart. If the new quantity is 0,
+        the item is removed. Raises ValueError if the item is not found.
+        """
+        existing_item = next((item for item in self.items if item.item_id == item_id), None)
+        if existing_item:
+            if new_quantity == 0:
+                self.items.remove(existing_item)
+            else:
+                existing_item.quantity = new_quantity
+        else:
+            raise ValueError(f"Item with id '{item_id}' not found in cart.")

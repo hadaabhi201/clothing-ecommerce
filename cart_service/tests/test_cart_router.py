@@ -136,3 +136,104 @@ async def test_view_cart_with_items(mock_user_cart_dependency: Cart) -> None:
 
     # Clean up the override
     del app.dependency_overrides[get_user_cart]
+
+
+@pytest.mark.asyncio
+async def test_remove_from_cart_success() -> None:
+    """Test removing an item from the cart successfully."""
+    user_id = "testuser"
+    item_id_to_remove = "1-1"
+
+    # Patch the Cart.remove_item method to simulate success
+    with patch.object(Cart, "remove_item") as mock_remove_method:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            response = await ac.delete(f"/cart/{user_id}/remove/{item_id_to_remove}")
+
+    assert response.status_code == 200
+    response_data = response.json()
+    assert response_data["message"] == f"Item '{item_id_to_remove}' removed"
+
+    # Assert that the remove_item method was called once with the correct item_id
+    mock_remove_method.assert_called_once_with(item_id_to_remove)
+
+
+@pytest.mark.asyncio
+async def test_remove_from_cart_item_not_found() -> None:
+    """Test removing an item not present in the cart."""
+    user_id = "testuser"
+    item_id_to_remove = "non-existent-item"
+
+    # Patch the Cart.remove_item method to raise a ValueError
+    with patch.object(
+        Cart, "remove_item", new=AsyncMock(side_effect=ValueError("Item not found."))
+    ) as mock_remove_method:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            response = await ac.delete(f"/cart/{user_id}/remove/{item_id_to_remove}")
+
+    assert response.status_code == 404
+    assert "Item not found." in response.json()["detail"]
+
+    # Assert that the remove_item method was called once
+    mock_remove_method.assert_called_once_with(item_id_to_remove)
+
+
+@pytest.mark.asyncio
+async def test_update_item_in_cart_success() -> None:
+    """Test updating an item's quantity in the cart successfully."""
+    user_id = "testuser"
+    item_id_to_update = "1-1"
+    payload = {"quantity": 5}
+
+    with patch.object(Cart, "update_item_quantity", new=AsyncMock()) as mock_update_method:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            response = await ac.put(f"/cart/{user_id}/update/{item_id_to_update}", json=payload)
+
+    assert response.status_code == 200
+    response_data = response.json()
+    assert response_data["message"] == f"Item '{item_id_to_update}' updated"
+
+    mock_update_method.assert_awaited_once_with(item_id_to_update, payload["quantity"])
+
+
+@pytest.mark.asyncio
+async def test_update_item_in_cart_item_not_found() -> None:
+    """Test updating an item not present in the cart."""
+    user_id = "testuser"
+    item_id_to_update = "non-existent-item"
+    payload = {"quantity": 5}
+
+    with patch.object(
+        Cart,
+        "update_item_quantity",
+        new=AsyncMock(side_effect=ValueError("Item not found in cart.")),
+    ) as mock_update_method:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            response = await ac.put(f"/cart/{user_id}/update/{item_id_to_update}", json=payload)
+
+    assert response.status_code == 404
+    assert "Item not found in cart." in response.json()["detail"]
+
+    mock_update_method.assert_awaited_once_with(item_id_to_update, payload["quantity"])
+
+
+@pytest.mark.asyncio
+async def test_update_item_in_cart_to_zero_quantity() -> None:
+    """Test updating an item's quantity to 0, which should remove it."""
+    user_id = "testuser"
+    item_id_to_update = "1-1"
+    payload = {"quantity": 0}
+
+    with patch.object(Cart, "update_item_quantity", new=AsyncMock()) as mock_update_method:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            response = await ac.put(f"/cart/{user_id}/update/{item_id_to_update}", json=payload)
+
+    assert response.status_code == 200
+    response_data = response.json()
+    assert response_data["message"] == f"Item '{item_id_to_update}' updated"
+
+    mock_update_method.assert_awaited_once_with(item_id_to_update, payload["quantity"])
